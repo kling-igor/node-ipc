@@ -6,12 +6,10 @@ let counter = 0
 const handler = setInterval(() => {
   // process.stdout.write(`${counter++}\n`)
 
-  // process.stdout.write({ val: 42 })
+  const obj = { val: 42 }
+  stream.write(JSON.stringify(obj) + '\n')
 
-  // stream.write({ val: 42 })
-  stream.write(`HELLO_${counter++} `)
-
-  if (counter > 10) {
+  if (counter++ > 10000) {
     clearInterval(handler)
   }
 }, 0)
