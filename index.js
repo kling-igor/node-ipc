@@ -5,7 +5,7 @@ const path = require('path')
 const writer = new (class extends Writable {
   constructor(opts) {
     super(opts)
-    this.data = []
+    this.data = {}
   }
 
   _write(chunk, encoding, next) {
@@ -17,7 +17,14 @@ const writer = new (class extends Writable {
         const trimmed = item.trim()
         if (trimmed) {
           const obj = JSON.parse(trimmed)
-          this.data.push(obj)
+
+          const { root, commit } = obj
+
+          if (root) {
+            this.data = root
+          } else if (commit) {
+            this.data.arr.push(commit)
+          }
         }
       } catch (e) {
         console.log('ERR:', e)
@@ -29,14 +36,19 @@ const writer = new (class extends Writable {
 })()
 
 ;(async () => {
-  const child = spawn(process.execPath, [path.resolve(__dirname, './child.js')], {
-    stdio: ['ignore', 'ignore', 'ignore', 'pipe']
+  const result = await new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, [path.resolve(__dirname, './child.js')], {
+      stdio: ['ignore', 'ignore', 'ignore', 'pipe']
+    })
+
+    child.once('close', () => {
+      resolve(writer.data)
+    })
+
+    child.once('error', reject)
+
+    child.stdio[3].pipe(writer)
   })
 
-  child.on('close', () => {
-    console.log('DONE', writer.data)
-  })
-
-  // child.stdout.pipe(writer /*process.stdout*/)
-  child.stdio[3].pipe(writer)
+  console.log('RESULT:', result)
 })()
